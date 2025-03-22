@@ -721,12 +721,7 @@ lazy val enableMimaSettingsJVM =
   Def.settings(
     mimaFailOnProblem      := enforceMimaCompatibility,
     mimaPreviousArtifacts  := previousStableVersion.value.map(organization.value %% moduleName.value % _).toSet,
-    mimaBinaryIssueFilters := Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("caliban.QuickAdapter.runServer"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("caliban.quick.package#GraphqlServerOps.runServer"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("caliban.quick.package#GraphqlServerOps.runServer$extension"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("caliban.quick.package#UnsafeApi.runServer")
-    )
+    mimaBinaryIssueFilters := Seq()
   )
 
 lazy val enableMimaSettingsJS =
