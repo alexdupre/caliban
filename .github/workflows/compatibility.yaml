@@ -3,7 +3,7 @@ name: Federation Specification Compatibility Test
 on:
   pull_request:
     branches:
-      - series/2.x
+      - series/3.x
     paths:
       - apollo-compatibility/**
       - federation/**

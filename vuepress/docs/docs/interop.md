@@ -294,7 +294,7 @@ import caliban.schema.ArgBuilder.auto._
 val api: GraphQL[Any] = addBookEndpoint.toGraphQL
 ```
 
-You can find a [full example](https://github.com/ghostdogpr/caliban/tree/series/2.x/examples/src/main/scala/example/tapir) on github.
+You can find a [full example](https://github.com/ghostdogpr/caliban/tree/series/3.x/examples/src/main/scala/example/tapir) on github.
 
 ### GraphQL restrictions
 

@@ -129,4 +129,4 @@ The `QuickAdapter` exposes the following methods that allow you to customize the
 - `handlers` which returns a `QuickHandlers[R]` which contains individual handlers to manually construct routes.
   Note that this handler is only for the api routes. To construct the graphiql handler use `caliban.GraphiQLHandler.handler`.
 
-For more info on customization and middleware, check out the [adapter examples](https://github.com/ghostdogpr/caliban/tree/series/2.x/examples/src/main/scala/example/quick)!
+For more info on customization and middleware, check out the [adapter examples](https://github.com/ghostdogpr/caliban/tree/series/3.x/examples/src/main/scala/example/quick)!

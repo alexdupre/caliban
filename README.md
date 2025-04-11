@@ -26,7 +26,7 @@ The design principles behind the library are the following:
 
 Here is a partial list of companies using Caliban in production.
 
-Want to see your company here? [Submit a PR](https://github.com/ghostdogpr/caliban/edit/series/2.x/README.md)!
+Want to see your company here? [Submit a PR](https://github.com/ghostdogpr/caliban/edit/series/3.x/README.md)!
 
 * [Anduin Transactions](https://www.anduintransact.com)
 * [AnyMind Group](https://anymindgroup.com)
