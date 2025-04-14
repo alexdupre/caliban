@@ -4,7 +4,7 @@ Once you have an interpreter able to execute GraphQL queries, you usually want t
 Caliban comes with a few "ready-to-use" components (called "adapters") to expose your API with the most popular HTTP libraries.
 
 ::: tip `QuickAdapter`
-Starting with v2.4.3, Caliban provides the opinionated [QuickAdapter](adapters.md#high-performance-quickadapter)
+Starting with v2.4.3, Caliban provides the zio-http based, opinionated [QuickAdapter](adapters.md#high-performance-quickadapter)
 that favours ease-of-use and performance at the expense of customizability.
 
 If you want the best possible performance, make sure to check it out!
@@ -110,7 +110,7 @@ for {
     // Alternatively, without imported syntax:
     handlers2 <- api.interpreter.map(QuickAdapter(_).handlers)
     // Creates a handler which serves the GraphiQL API from CDN
-    graphiql = GraphiQLHandler.handler(apiPath = "/api/graphql", graphiqlPath = "/graphiql")
+    graphiql = GraphiQLHandler.handler(apiPath = "/api/graphql", wsPath = None)
     app = Routes(
             Method.ANY / "api" / "graphql"     -> handlers.api,
             Method.GET / "graphiql"            -> graphiql,
