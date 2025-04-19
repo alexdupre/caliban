@@ -6,6 +6,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 private[caliban] object ValidationOps {
+  import caliban.syntax._
+
   val unit: Either[Nothing, Unit] = Right(())
 
   def when(cond: Boolean)(f: => Either[ValidationError, Unit]): Either[ValidationError, Unit] =
@@ -15,8 +17,9 @@ private[caliban] object ValidationOps {
   def validateAllDiscard[A](
     in: List[A]
   )(f: A => Either[ValidationError, Unit]): Either[ValidationError, Unit] = {
+    val nil = Nil
     var rem = in
-    while (rem ne Nil) {
+    while (rem ne nil) {
       val res = f(rem.head)
       if (res.isLeft) return res
       else rem = rem.tail
@@ -29,8 +32,8 @@ private[caliban] object ValidationOps {
   )(f: (K, V) => Either[ValidationError, Unit]): Either[ValidationError, Unit] = {
     val it = in.iterator
     while (it.hasNext) {
-      val (k, v) = it.next()
-      val res    = f(k, v)
+      val kv  = it.next()
+      val res = f(kv._1, kv._2)
       if (res.isLeft) return res
     }
     unit
@@ -50,26 +53,24 @@ private[caliban] object ValidationOps {
   def validateAllNonEmpty[A](
     in: List[A]
   )(f: A => Either[ValidationError, Unit]): Option[Either[ValidationError, Unit]] =
-    if (in.isEmpty) None
+    if (in eq Nil) None
     else Some(validateAllDiscard(in)(f))
 
   def validateAll[A, B](
     in: List[A]
   )(f: A => Either[ValidationError, B]): Either[ValidationError, List[B]] = {
-    var i       = 0
+    val nil     = Nil
     var rem     = in
-    var err     = null.asInstanceOf[ValidationError]
     val builder = ListBuffer.empty[B]
-    while ((rem ne Nil) && (err eq null)) {
-      val value = rem.head
-      f(value) match {
+
+    while (rem ne nil) {
+      f(rem.head) match {
         case Right(v) => builder.addOne(v)
-        case Left(e)  => err = e
+        case left     => return left.asInstanceOf[Either[ValidationError, List[B]]]
       }
-      i += 1
       rem = rem.tail
     }
-    if (err eq null) Right(builder.result()) else Left(err)
+    Right(builder.result())
   }
 
   def failWhen(
@@ -80,26 +81,20 @@ private[caliban] object ValidationOps {
   final implicit class EitherOps[E, A](private val self: Either[E, A]) extends AnyVal {
     def *>[B](other: Either[E, B]): Either[E, B] =
       (self: @unchecked) match {
-        case _: Right[?, ?]                      => other
         case l: Left[E @unchecked, B @unchecked] => l
+        case _                                   => other
       }
 
-    def as[B](a: B): Either[E, B] =
+    def as[B](b: B): Either[E, B] =
       (self: @unchecked) match {
-        case _: Right[?, ?]                      => Right(a)
         case l: Left[E @unchecked, B @unchecked] => l
+        case _                                   => Right(b)
       }
 
     def unit: Either[E, Unit] =
       (self: @unchecked) match {
-        case _: Right[?, ?]                         => ValidationOps.unit
         case l: Left[E @unchecked, Unit @unchecked] => l
+        case _                                      => ValidationOps.unit
       }
-  }
-
-  implicit class EnrichedListBufferOps[A](private val lb: ListBuffer[A]) extends AnyVal {
-    // This method doesn't exist in Scala 2.12 so we just use `.map` for it instead
-    def addOne(elem: A): ListBuffer[A]            = lb += elem
-    def addAll(elems: Iterable[A]): ListBuffer[A] = lb ++= elems
   }
 }

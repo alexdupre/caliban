@@ -6,23 +6,25 @@ import caliban.Value.{ NullValue, StringValue }
 import caliban.introspection.adt.__InputValue
 import caliban.schema.{ ArgBuilder, Schema, Types }
 
-private[federation] object FederationHelpers {
-  def traverseEither[A, B](list: List[Either[A, B]]): Either[A, List[B]] = {
-    val iterator = list.iterator
-    val result   = List.newBuilder[B]
-    var error    = Option.empty[A]
+import scala.collection.mutable.ListBuffer
 
-    while (error.isEmpty && iterator.hasNext) {
-      val b = iterator.next()
-      b match {
-        case Left(value)  =>
-          result.clear()
-          error = Some(value)
-        case Right(value) => result += value
+private[federation] object FederationHelpers {
+  import caliban.syntax._
+
+  private def buildInputsAsAny(list: List[InputValue]): Either[ExecutionError, List[_Any]] = {
+    val nil    = Nil
+    val result = ListBuffer.empty[_Any]
+    var rem    = list
+
+    while (rem ne nil) {
+      anyArgBuilder.build(rem.head) match {
+        case Right(value) => result addOne value
+        case l            => return l.asInstanceOf[Either[ExecutionError, List[_Any]]]
       }
+      rem = rem.tail
     }
 
-    error.toLeft(result.result())
+    Right(result.result())
   }
 
   private[federation] val _FieldSet = __InputValue(
@@ -39,12 +41,10 @@ private[federation] object FederationHelpers {
 
   val anyArgBuilder: ArgBuilder[_Any] = {
     case v @ InputValue.ObjectValue(fields) =>
-      fields
-        .get("__typename")
-        .collect { case StringValue(__typename) =>
-          _Any(__typename, v)
-        }
-        .toRight(ExecutionError("_Any must contain a __typename value"))
+      fields.getOrElseNull("__typename") match {
+        case StringValue(__typename) => Right(_Any(__typename, v))
+        case _                       => Left(ExecutionError("_Any must contain a __typename value"))
+      }
     case other                              => Left(ExecutionError(s"Can't build a _Any from input $other"))
   }
 
@@ -52,13 +52,12 @@ private[federation] object FederationHelpers {
 
   implicit val representationsArgBuilder: ArgBuilder[RepresentationsArgs] = {
     case InputValue.ObjectValue(fields) =>
-      fields.get("representations").toRight(ExecutionError("_Any must contain a __typename value")).flatMap {
-        case InputValue.ListValue(values) =>
-          traverseEither(values.map(anyArgBuilder.build)).map(RepresentationsArgs.apply)
+      fields.getOrElseNull("representations") match {
+        case InputValue.ListValue(values) => buildInputsAsAny(values).map(RepresentationsArgs.apply)
+        case null                         => Left(ExecutionError("RepresentationsArgs must contain a representations value"))
         case other                        => Left(ExecutionError(s"Can't build a representations from input $other"))
       }
     case other                          => Left(ExecutionError(s"Can't build a representations from input $other"))
-
   }
 
   case class _Entity(__typename: String, value: InputValue)
