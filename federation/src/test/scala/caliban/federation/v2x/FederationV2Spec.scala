@@ -16,6 +16,7 @@ import zio.test.Assertion.hasSameElements
 import zio.test._
 
 object FederationV2Spec extends ZIOSpecDefault {
+
   override def spec =
     suite("FederationV2Spec")(
       test("includes schema directives - v2.0") {
@@ -231,6 +232,16 @@ object FederationV2Spec extends ZIOSpecDefault {
             )
           )
         }
+
+      },
+      test("renderer renders the schema including the extensions") {
+        import caliban.federation.v2_3._
+
+        val actual   = federationRenderer.compact.render(Fixture.api)
+        val expected =
+          """schema@link(url:"https://specs.apollo.dev/federation/v2.3",import:["@key","@requires","@provides","@external","@shareable","@tag","@inaccessible","@override","@extends","@composeDirective","@interfaceObject"]){query:Query}type Query{hello:String! user:User!}type User@key(fields:"id")@shareable{id:ID!}"""
+
+        assertTrue(actual == expected)
 
       }
     )
