@@ -1,6 +1,8 @@
 import com.typesafe.tools.mima.core.*
 import org.scalajs.linker.interface.ModuleSplitStyle
 import sbtcrossproject.CrossPlugin.autoImport.{ crossProject, CrossType }
+import sbt.*
+import Keys.*
 
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
@@ -15,25 +17,25 @@ val circeVersion              = "0.14.13"
 val fs2Version                = "3.12.0"
 val http4sVersion             = "0.23.30"
 val javaTimeVersion           = "2.6.0"
-val jsoniterVersion           = "2.35.3"
+val jsoniterVersion           = "2.36.2"
 val laminextVersion           = "0.17.0"
 val magnoliaScala2Version     = "1.1.10"
-val magnoliaScala3Version     = "1.3.16"
-val pekkoHttpVersion          = "1.1.0"
+val magnoliaScala3Version     = "1.3.18"
+val pekkoHttpVersion          = "1.2.0"
 val playVersion               = "3.0.7"
 val playJsonVersion           = "3.0.4"
 val scalafmtVersion           = "3.8.0"
 val sttpVersion               = "4.0.2"
-val tapirVersion              = "1.11.25"
-val zioVersion                = "2.1.17"
+val tapirVersion              = "1.11.33"
+val zioVersion                = "2.1.19"
 val zioInteropCats2Version    = "22.0.0.0"
 val zioInteropCats3Version    = "23.1.0.5"
 val zioInteropReactiveVersion = "2.0.2"
 val zioConfigVersion          = "4.0.4"
 val zqueryVersion             = "0.7.7"
-val zioJsonVersion            = "0.7.42"
-val zioHttpVersion            = "3.2.0"
-val zioOpenTelemetryVersion   = "3.1.4"
+val zioJsonVersion            = "0.7.43"
+val zioHttpVersion            = "3.3.3"
+val zioOpenTelemetryVersion   = "3.1.5"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -215,7 +217,24 @@ lazy val tools = project
       "dev.zio"                       %% "zio-test"            % zioVersion     % Test,
       "dev.zio"                       %% "zio-test-sbt"        % zioVersion     % Test,
       "dev.zio"                       %% "zio-json"            % zioJsonVersion % Test
-    )
+    ),
+    Test / publishArtifact := true,
+
+    // Include test artifact for publishLocal
+    publishLocalConfiguration := {
+      val config        = publishLocalConfiguration.value
+      val testArtifacts = (Test / packagedArtifacts).value
+      config.withArtifacts(config.artifacts ++ testArtifacts).withOverwrite(true)
+    },
+    // Exclude test artifact from publish
+    publishConfiguration      := {
+      val config = publishConfiguration.value
+      config
+        .withArtifacts(config.artifacts.filterNot { case (artifact, _) =>
+          artifact.configurations.exists(_.name == "test")
+        })
+        .withOverwrite(true)
+    }
   )
   .dependsOn(core, clientJVM, quickAdapter % Test)
 
@@ -235,7 +254,7 @@ lazy val tracing = project
       "dev.zio"         %% "zio-opentelemetry"         % zioOpenTelemetryVersion,
       "dev.zio"         %% "zio-test"                  % zioVersion % Test,
       "dev.zio"         %% "zio-test-sbt"              % zioVersion % Test,
-      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.49.0"   % Test
+      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.50.0"   % Test
     )
   )
   .dependsOn(core, tools)
@@ -266,18 +285,27 @@ lazy val codegenSbt = project
   .settings(
     scriptedLaunchOpts   := {
       scriptedLaunchOpts.value ++
-        Seq("-Xmx1024M", "-Xss4M", "-Dplugin.version=" + version.value)
+        Seq(
+          "-Xmx1024M",
+          "-Xss4M",
+          "-Dplugin.version=" + version.value,
+          "-Dzio.test.version=" + ScriptedDependency.Version.zioTest,
+          "-Dsttp.version=" + ScriptedDependency.Version.sttp,
+          s"-Dproject.dir=${baseDirectory.value.getAbsolutePath}"
+        )
     },
     scriptedBufferLog    := false,
-    scriptedDependencies := {
-      (macros / publishLocal).value
-      (core / publishLocal).value
-      (clientJVM / publishLocal).value
-      (tools / publishLocal).value
-      publishLocal.value
-    }
+    scriptedDependencies := scriptedDependencies
+      .dependsOn(
+        macros / publishLocal,
+        core / publishLocal,
+        clientJVM / publishLocal,
+        tools / publishLocal,
+        publishLocal
+      )
+      .value
   )
-  .dependsOn(tools)
+  .dependsOn(tools % "compile->compile;test->test")
 
 lazy val catsInterop = project
   .in(file("interop/cats"))
