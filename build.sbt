@@ -13,11 +13,11 @@ val akkaVersion               = "2.6.20"
 val akkaHttpVersion           = "10.2.10"
 val catsEffect3Version        = "3.6.1"
 val catsMtlVersion            = "1.5.0"
-val circeVersion              = "0.14.13"
+val circeVersion              = "0.14.14"
 val fs2Version                = "3.12.0"
 val http4sVersion             = "0.23.30"
 val javaTimeVersion           = "2.6.0"
-val jsoniterVersion           = "2.36.2"
+val jsoniterVersion           = "2.36.5"
 val laminextVersion           = "0.17.0"
 val magnoliaScala2Version     = "1.1.10"
 val magnoliaScala3Version     = "1.3.18"
@@ -26,16 +26,16 @@ val playVersion               = "3.0.7"
 val playJsonVersion           = "3.0.4"
 val scalafmtVersion           = "3.8.0"
 val sttpVersion               = "4.0.2"
-val tapirVersion              = "1.11.33"
+val tapirVersion              = "1.11.35"
 val zioVersion                = "2.1.19"
 val zioInteropCats2Version    = "22.0.0.0"
 val zioInteropCats3Version    = "23.1.0.5"
 val zioInteropReactiveVersion = "2.0.2"
 val zioConfigVersion          = "4.0.4"
 val zqueryVersion             = "0.7.7"
-val zioJsonVersion            = "0.7.43"
+val zioJsonVersion            = "0.7.44"
 val zioHttpVersion            = "3.3.3"
-val zioOpenTelemetryVersion   = "3.1.5"
+val zioOpenTelemetryVersion   = "3.1.6"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -46,7 +46,6 @@ inThisBuild(
     organization             := "com.github.ghostdogpr",
     homepage                 := Some(url("https://github.com/ghostdogpr/caliban")),
     licenses                 := List(License.Apache2),
-    // resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     Test / parallelExecution := false,
     scmInfo                  := Some(
       ScmInfo(
@@ -254,7 +253,7 @@ lazy val tracing = project
       "dev.zio"         %% "zio-opentelemetry"         % zioOpenTelemetryVersion,
       "dev.zio"         %% "zio-test"                  % zioVersion % Test,
       "dev.zio"         %% "zio-test-sbt"              % zioVersion % Test,
-      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.50.0"   % Test
+      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.51.0"   % Test
     )
   )
   .dependsOn(core, tools)
@@ -494,7 +493,7 @@ lazy val clientJS  = client.js
 lazy val clientNative = client.native
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.lolgab" %%% "scala-native-crypto" % "0.2.0",
+      "com.github.lolgab" %%% "scala-native-crypto" % "0.2.1",
       "io.github.cquiroz" %%% "scala-java-time"     % javaTimeVersion % Test
     ),
     Test / fork := false
