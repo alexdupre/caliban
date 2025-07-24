@@ -102,17 +102,27 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
   def toGraphQL[A1 >: A, Origin1 <: Origin](
     useVariables: Boolean = false,
     queryName: Option[String] = None,
-    dropNullInputValues: Boolean = false
+    dropNullInputValues: Boolean = false,
+    directives: List[Directive] = Nil
   )(implicit ev: IsOperation[Origin1]): GraphQLRequest = {
     val (fields, variables) =
       SelectionBuilder.toGraphQL(toSelectionSet, useVariables, dropNullInputValues)
-    val variableDef         =
-      if (variables.nonEmpty)
-        s"(${variables.map { case (name, (_, typeName)) => s"$$$name: $typeName" }.mkString(",")})"
-      else ""
     val nameDef             = queryName.fold("")(name => s" $name ")
-    val operation           = s"${ev.operationName}$nameDef$variableDef{$fields}"
-    GraphQLRequest(operation, variables.map { case (k, (v, _)) => k -> v })
+    val (dirs, variables2)  = directives
+      .foldLeft((List.empty[String], variables)) { case ((dirs, variables), d) =>
+        val (d2, v2) = d.toGraphQL(useVariables, dropNullInputValues, variables)
+        (d2 :: dirs, v2)
+      }
+    val dirString           = dirs.reverse.mkString(" ") match {
+      case ""   => ""
+      case dirs => s"$dirs "
+    }
+    val variableDef         =
+      if (variables2.nonEmpty)
+        s"(${variables2.map { case (name, (_, typeName)) => s"$$$name: $typeName" }.mkString(",")}) "
+      else ""
+    val operation           = s"${ev.operationName}$nameDef$variableDef$dirString{$fields}"
+    GraphQLRequest(operation, variables2.map { case (k, (v, _)) => k -> v })
   }
 
   /**
@@ -128,9 +138,10 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
     uri: Uri,
     useVariables: Boolean = false,
     queryName: Option[String] = None,
-    dropNullInputValues: Boolean = false
+    dropNullInputValues: Boolean = false,
+    directives: List[Directive] = Nil
   )(implicit ev: IsOperation[Origin1]): Request[Either[CalibanClientError, A1], Any] =
-    toRequestWith[A1, Origin1](uri, useVariables, queryName, dropNullInputValues)((res, _, _) => res)(ev)
+    toRequestWith[A1, Origin1](uri, useVariables, queryName, dropNullInputValues, directives)((res, _, _) => res)(ev)
 
   /**
    * Transforms a root selection into an STTP request ready to be run.
@@ -145,13 +156,14 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
     uri: Uri,
     useVariables: Boolean = false,
     queryName: Option[String] = None,
-    dropNullInputValues: Boolean = false
+    dropNullInputValues: Boolean = false,
+    directives: List[Directive] = Nil
   )(
     mapResponse: (A, List[GraphQLResponseError], Option[__ObjectValue]) => B
   )(implicit ev: IsOperation[Origin1]): Request[Either[CalibanClientError, B], Any] =
     basicRequest
       .post(uri)
-      .body(toGraphQL(useVariables, queryName, dropNullInputValues))
+      .body(toGraphQL(useVariables, queryName, dropNullInputValues, directives))
       .mapResponse(
         _.left
           .map(CommunicationError(_))
